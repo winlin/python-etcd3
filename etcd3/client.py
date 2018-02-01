@@ -103,6 +103,7 @@ class Etcd3Client(object):
                  user=None, password=None):
 
         self._url = '{host}:{port}'.format(host=host, port=port)
+        self.access_token = None
 
         cert_params = [c is not None for c in (cert_cert, cert_key)]
         if ca_cert is not None:
@@ -140,6 +141,7 @@ class Etcd3Client(object):
             )
 
             resp = self.auth_stub.Authenticate(auth_request, self.timeout)
+            self.access_token = resp.token
             self.call_credentials = grpc.metadata_call_credentials(
                 EtcdTokenCallCredentials(resp.token))
 
@@ -153,7 +155,7 @@ class Etcd3Client(object):
         self.watcher = watch.Watcher(
             etcdrpc.WatchStub(self.channel),
             timeout=self.timeout,
-            call_credentials=self.call_credentials,
+            call_credentials=self.call_credentials
         )
         self.clusterstub = etcdrpc.ClusterStub(self.channel)
         self.leasestub = etcdrpc.LeaseStub(self.channel)
@@ -247,6 +249,7 @@ class Etcd3Client(object):
             range_request,
             self.timeout,
             credentials=self.call_credentials,
+            metadata=(('token', self.access_token),)
         )
 
         if range_response.count < 1:
@@ -274,6 +277,7 @@ class Etcd3Client(object):
             range_request,
             self.timeout,
             credentials=self.call_credentials,
+            metadata=(('token', self.access_token),)
         )
 
         if range_response.count < 1:
@@ -300,6 +304,7 @@ class Etcd3Client(object):
             range_request,
             self.timeout,
             credentials=self.call_credentials,
+            metadata=(('token', self.access_token),)
         )
 
         if range_response.count < 1:
@@ -339,6 +344,7 @@ class Etcd3Client(object):
             put_request,
             self.timeout,
             credentials=self.call_credentials,
+            metadata=(('token', self.access_token),)
         )
 
     @_handle_errors
@@ -394,6 +400,7 @@ class Etcd3Client(object):
             delete_request,
             self.timeout,
             credentials=self.call_credentials,
+            metadata=(('token', self.access_token),)
         )
         return delete_response.deleted >= 1
 
@@ -408,6 +415,7 @@ class Etcd3Client(object):
             delete_request,
             self.timeout,
             credentials=self.call_credentials,
+            metadata=(('token', self.access_token),)
         )
 
     @_handle_errors
@@ -418,6 +426,7 @@ class Etcd3Client(object):
             status_request,
             self.timeout,
             credentials=self.call_credentials,
+            metadata=(('token', self.access_token),)
         )
 
         for m in self.members:
@@ -622,6 +631,7 @@ class Etcd3Client(object):
             transaction_request,
             self.timeout,
             credentials=self.call_credentials,
+            metadata=(('token', self.access_token),)
         )
 
         responses = []
@@ -659,6 +669,7 @@ class Etcd3Client(object):
             lease_grant_request,
             self.timeout,
             credentials=self.call_credentials,
+            metadata=(('token', self.access_token),)
         )
         return leases.Lease(lease_id=lease_grant_response.ID,
                             ttl=lease_grant_response.TTL,
@@ -676,6 +687,7 @@ class Etcd3Client(object):
             lease_revoke_request,
             self.timeout,
             credentials=self.call_credentials,
+            metadata=(('token', self.access_token),)
         )
 
     @_handle_errors
@@ -685,7 +697,8 @@ class Etcd3Client(object):
         for response in self.leasestub.LeaseKeepAlive(
                 iter(request_stream),
                 self.timeout,
-                credentials=self.call_credentials):
+                credentials=self.call_credentials,
+                metadata=(('token', self.access_token),)):
             yield response
 
     @_handle_errors
@@ -697,6 +710,7 @@ class Etcd3Client(object):
             ttl_request,
             self.timeout,
             credentials=self.call_credentials,
+            metadata=(('token', self.access_token),)
         )
 
     @_handle_errors
@@ -729,6 +743,7 @@ class Etcd3Client(object):
             member_add_request,
             self.timeout,
             credentials=self.call_credentials,
+            metadata=(('token', self.access_token),)
         )
 
         member = member_add_response.member
@@ -750,6 +765,7 @@ class Etcd3Client(object):
             member_rm_request,
             self.timeout,
             credentials=self.call_credentials,
+            metadata=(('token', self.access_token),)
         )
 
     @_handle_errors
@@ -767,6 +783,7 @@ class Etcd3Client(object):
             member_update_request,
             self.timeout,
             credentials=self.call_credentials,
+            metadata=(('token', self.access_token),)
         )
 
     @property
@@ -782,6 +799,7 @@ class Etcd3Client(object):
             member_list_request,
             self.timeout,
             credentials=self.call_credentials,
+            metadata=(('token', self.access_token),)
         )
 
         for member in member_list_response.members:
@@ -811,6 +829,7 @@ class Etcd3Client(object):
             compact_request,
             self.timeout,
             credentials=self.call_credentials,
+            metadata=(('token', self.access_token),)
         )
 
     @_handle_errors
@@ -821,6 +840,7 @@ class Etcd3Client(object):
             defrag_request,
             self.timeout,
             credentials=self.call_credentials,
+            metadata=(('token', self.access_token),)
         )
 
     @_handle_errors
@@ -876,6 +896,7 @@ class Etcd3Client(object):
             alarm_request,
             self.timeout,
             credentials=self.call_credentials,
+            metadata=(('token', self.access_token),)
         )
 
         return [Alarm(alarm.alarm, alarm.memberID)
@@ -898,6 +919,7 @@ class Etcd3Client(object):
             alarm_request,
             self.timeout,
             credentials=self.call_credentials,
+            metadata=(('token', self.access_token),)
         )
 
         for alarm in alarm_response.alarms:
@@ -919,6 +941,7 @@ class Etcd3Client(object):
             alarm_request,
             self.timeout,
             credentials=self.call_credentials,
+            metadata=(('token', self.access_token),)
         )
 
         return [Alarm(alarm.alarm, alarm.memberID)
@@ -935,6 +958,7 @@ class Etcd3Client(object):
             snapshot_request,
             self.timeout,
             credentials=self.call_credentials,
+            metadata=(('token', self.access_token),)
         )
 
         for response in snapshot_response:
