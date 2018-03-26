@@ -14,7 +14,7 @@ import etcd3.locks as locks
 import etcd3.members
 import etcd3.transactions as transactions
 import etcd3.utils as utils
-import etcd3.watch as watch
+#import etcd3.watch as watch
 
 _EXCEPTIONS_BY_CODE = {
     grpc.StatusCode.INTERNAL: exceptions.InternalServerError,
@@ -152,11 +152,12 @@ class Etcd3Client(object):
             )
 
         self.kvstub = etcdrpc.KVStub(self.channel)
-        self.watcher = watch.Watcher(
-            etcdrpc.WatchStub(self.channel),
-            timeout=self.timeout,
-            call_credentials=self.call_credentials
-        )
+        # Calling Etcd3Client() will create mulit thread so here commented
+        # self.watcher = watch.Watcher(
+        #     etcdrpc.WatchStub(self.channel),
+        #     timeout=self.timeout,
+        #     call_credentials=self.call_credentials
+        # )
         self.clusterstub = etcdrpc.ClusterStub(self.channel)
         self.leasestub = etcdrpc.LeaseStub(self.channel)
         self.maintenancestub = etcdrpc.MaintenanceStub(self.channel)
@@ -443,8 +444,8 @@ class Etcd3Client(object):
                       status_response.raftIndex,
                       status_response.raftTerm)
 
-    @_handle_errors
-    def add_watch_callback(self, *args, **kwargs):
+    # @_handle_errors
+    # def add_watch_callback(self, *args, **kwargs):
         """
         Watch a key or range of keys and call a callback on every event.
 
@@ -457,13 +458,13 @@ class Etcd3Client(object):
 
         :returns: watch_id. Later it could be used for cancelling watch.
         """
-        try:
-            return self.watcher.add_callback(*args, **kwargs)
-        except queue.Empty:
-            raise exceptions.WatchTimedOut()
+        # try:
+        #     return self.watcher.add_callback(*args, **kwargs)
+        # except queue.Empty:
+        #     raise exceptions.WatchTimedOut()
 
-    @_handle_errors
-    def watch(self, key, **kwargs):
+    # @_handle_errors
+    # def watch(self, key, **kwargs):
         """
         Watch a key.
 
@@ -480,42 +481,42 @@ class Etcd3Client(object):
                   Use ``events_iterator`` to get the events of key changes
                   and ``cancel`` to cancel the watch request
         """
-        event_queue = queue.Queue()
+        # event_queue = queue.Queue()
 
-        def callback(event):
-            event_queue.put(event)
+        # def callback(event):
+        #     event_queue.put(event)
 
-        watch_id = self.add_watch_callback(key, callback, **kwargs)
-        canceled = threading.Event()
+        # watch_id = self.add_watch_callback(key, callback, **kwargs)
+        # canceled = threading.Event()
 
-        def cancel():
-            canceled.set()
-            event_queue.put(None)
-            self.cancel_watch(watch_id)
+        # def cancel():
+        #     canceled.set()
+        #     event_queue.put(None)
+        #     self.cancel_watch(watch_id)
 
-        @_handle_errors
-        def iterator():
-            while not canceled.is_set():
-                event = event_queue.get()
-                if event is None:
-                    canceled.set()
-                if isinstance(event, Exception):
-                    canceled.set()
-                    raise event
-                if not canceled.is_set():
-                    yield event
+        # @_handle_errors
+        # def iterator():
+        #     while not canceled.is_set():
+        #         event = event_queue.get()
+        #         if event is None:
+        #             canceled.set()
+        #         if isinstance(event, Exception):
+        #             canceled.set()
+        #             raise event
+        #         if not canceled.is_set():
+        #             yield event
 
-        return iterator(), cancel
+        # return iterator(), cancel
 
-    @_handle_errors
-    def watch_prefix(self, key_prefix, **kwargs):
+    # @_handle_errors
+    # def watch_prefix(self, key_prefix, **kwargs):
         """Watches a range of keys with a prefix."""
-        kwargs['range_end'] = \
-            utils.increment_last_byte(utils.to_bytes(key_prefix))
-        return self.watch(key_prefix, **kwargs)
+        # kwargs['range_end'] = \
+        #     utils.increment_last_byte(utils.to_bytes(key_prefix))
+        # return self.watch(key_prefix, **kwargs)
 
-    @_handle_errors
-    def watch_once(self, key, timeout=None, **kwargs):
+    # @_handle_errors
+    # def watch_once(self, key, timeout=None, **kwargs):
         """
         Watch a key and stops after the first event.
 
@@ -526,40 +527,40 @@ class Etcd3Client(object):
         :param timeout: (optional) timeout in seconds.
         :returns: ``Event``
         """
-        event_queue = queue.Queue()
+        # event_queue = queue.Queue()
 
-        def callback(event):
-            event_queue.put(event)
+        # def callback(event):
+        #     event_queue.put(event)
 
-        watch_id = self.add_watch_callback(key, callback, **kwargs)
+        # watch_id = self.add_watch_callback(key, callback, **kwargs)
 
-        try:
-            return event_queue.get(timeout=timeout)
-        except queue.Empty:
-            raise exceptions.WatchTimedOut()
-        finally:
-            self.cancel_watch(watch_id)
+        # try:
+        #     return event_queue.get(timeout=timeout)
+        # except queue.Empty:
+        #     raise exceptions.WatchTimedOut()
+        # finally:
+        #     self.cancel_watch(watch_id)
 
-    @_handle_errors
-    def watch_prefix_once(self, key_prefix, timeout=None, **kwargs):
+    # @_handle_errors
+    # def watch_prefix_once(self, key_prefix, timeout=None, **kwargs):
         """
         Watches a range of keys with a prefix and stops after the first event.
 
         If the timeout was specified and event didn't arrived method
         will raise ``WatchTimedOut`` exception.
         """
-        kwargs['range_end'] = \
-            utils.increment_last_byte(utils.to_bytes(key_prefix))
-        return self.watch_once(key_prefix, timeout=timeout, **kwargs)
+        # kwargs['range_end'] = \
+        #     utils.increment_last_byte(utils.to_bytes(key_prefix))
+        # return self.watch_once(key_prefix, timeout=timeout, **kwargs)
 
-    @_handle_errors
-    def cancel_watch(self, watch_id):
+    # @_handle_errors
+    # def cancel_watch(self, watch_id):
         """
         Stop watching a key or range of keys.
 
         :param watch_id: watch_id returned by ``add_watch_callback`` method
         """
-        self.watcher.cancel(watch_id)
+        # self.watcher.cancel(watch_id)
 
     def _ops_to_requests(self, ops):
         """
